@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app__header">
+      <h1>Task Manager</h1>
+      <p class="app__subtitle">Frontend &rarr; Backend REST API &rarr; PostgreSQL</p>
+    </header>
+
+    <main class="app__main">
+      <section class="card">
+        <h2>Add a task</h2>
+        <form id="task-form" class="task-form">
+          <input
+            id="task-title"
+            type="text"
+            placeholder="Task title"
+            maxlength="255"
+            required
+          />
+          <textarea
+            id="task-description"
+            placeholder="Description (optional)"
+            rows="2"
+          ></textarea>
+          <button type="submit">Create Task</button>
+        </form>
+        <p id="form-error" class="error-text" hidden></p>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <h2>Tasks</h2>
+          <div class="filters" id="status-filters">
+            <button class="filter-btn active" data-status="">All</button>
+            <button class="filter-btn" data-status="pending">Pending</button>
+            <button class="filter-btn" data-status="in_progress">In Progress</button>
+            <button class="filter-btn" data-status="completed">Completed</button>
+          </div>
+          <button id="refresh-btn" class="secondary-btn" title="Refresh">&#8635;</button>
+        </div>
+
+        <p id="list-error" class="error-text" hidden></p>
+        <p id="loading-text" class="muted">Loading tasks...</p>
+        <ul id="task-list" class="task-list"></ul>
+        <p id="empty-text" class="muted" hidden>No tasks yet. Add one above.</p>
+      </section>
+
+      <section class="card status-card">
+        <h2>Backend status</h2>
+        <div id="backend-status" class="status-pill status-pill--unknown">Checking...</div>
+      </section>
+    </main>
+
+    <footer class="app__footer">
+      <p>Three-Tier Task Management Application &mdash; Frontend / Backend / PostgreSQL</p>
+    </footer>
+  </div>
+
+  <!-- Task detail / edit modal -->
+  <dialog id="task-modal">
+    <form id="edit-form" class="task-form">
+      <h2>Edit Task</h2>
+      <input id="edit-id" type="hidden" />
+      <label for="edit-title">Title</label>
+      <input id="edit-title" type="text" maxlength="255" required />
+      <label for="edit-description">Description</label>
+      <textarea id="edit-description" rows="3"></textarea>
+      <label for="edit-status">Status</label>
+      <select id="edit-status">
+        <option value="pending">Pending</option>
+        <option value="in_progress">In Progress</option>
+        <option value="completed">Completed</option>
+      </select>
+      <div class="modal-actions">
+        <button type="button" id="cancel-edit-btn" class="secondary-btn">Cancel</button>
+        <button type="submit">Save Changes</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
