@@ -113,7 +113,13 @@ def create_app(config_object=None) -> Flask:
 
     # CORS: locked down to the configured origin(s). Defaults to "*"
     # only in local development; production MUST set CORS_ORIGINS.
-    CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
+    CORS(
+    app,
+    resources={
+        r"/api/*": {"origins": app.config["CORS_ORIGINS"]},
+        r"/health/*": {"origins": app.config["CORS_ORIGINS"]},
+    },)
+
 
     db.init_app(app)
     migrate.init_app(app, db)
