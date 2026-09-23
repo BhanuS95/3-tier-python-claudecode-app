@@ -7,7 +7,7 @@
  * without any build-time configuration. For pure local (non-Docker)
  * development, set window.API_BASE_URL below or via a <script> tag.
  */
-const API_BASE_URL = window.API_BASE_URL || "http://43.204.220.113:5000";
+const API_BASE_URL = window.API_BASE_URL || "http://localhost:5000";
 
 const els = {
   form: document.getElementById("task-form"),
