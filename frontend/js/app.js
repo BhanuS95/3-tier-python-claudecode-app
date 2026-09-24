@@ -7,7 +7,11 @@
  * without any build-time configuration. For pure local (non-Docker)
  * development, set window.API_BASE_URL below or via a <script> tag.
  */
-const API_BASE_URL = window.API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = window.API_BASE_URL || ""; 
+/**
+ * use this "http://localhost:5000" localhost URL if you implement your project locally on your laptop
+ * replace localhost with EC2-public-ip if you are running your project locally on EC2 "http://EC2-public-IP:5000"
+ * do not provide any url if you are using nginx as a reverse proxy in your dockerfile just live it blank like that ""
 
 const els = {
   form: document.getElementById("task-form"),
