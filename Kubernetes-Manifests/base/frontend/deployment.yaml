@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: webapps
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: task-management-frontend:1.0.0
+
+          ports:
+            - name: http
+              containerPort: 3000
+          
+          resources:
+            requests:
+              cpu: "256m"
+              memory: "256Mi"
+            limits:
+              cpu: "512m"
+              memory: "512Mi"
+          
+          statupProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10s
+            periodSeconds: 10s
+            timeoutSeconds: 5s
+            successThreshold: 3
+            FailureThreshold: 5
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30s
+            periodSeconds: 20s
+            timeoutSeconds: 5s
+            successThreshold: 3
+            FailureThreshold: 5
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20s
+            periodSeconds: 10s
+            timeoutSeconds: 5s
+            successThreshold: 3
+            FailureThreshold: 5
