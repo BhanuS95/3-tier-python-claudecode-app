@@ -1,4 +1,4 @@
-```yaml
+
 services:
 
   # =========================
@@ -128,4 +128,3 @@ volumes:
 networks:
   task-management-network:
     driver: bridge
-```
