@@ -9,7 +9,7 @@ resources:
 images:
 - name: bhanus95/task-management-backend
   newName: bhanus95/task-management-backend
-  newTag: b000f05111fe25ab2ea9d5a1f10be80bc5028fc9
+  newTag: 86f219a1e8dc3b4a7876fce1e0ef9ae1d8213316
 - name: task-management-backend
   newName: bhanus95/task-management-backend
   newTag: "101"
