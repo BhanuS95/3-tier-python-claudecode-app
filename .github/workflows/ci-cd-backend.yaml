@@ -262,6 +262,10 @@ jobs:
     runs-on: ubuntu-24.04
     needs: build-image
 
+    permissions:
+      contents: read
+      security-events: write
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
