@@ -4,9 +4,12 @@ kind: Kustomization
 namespace: webapps
 
 resources:
-  - ../../../base/backend
+- ../../../base/backend
 
 images:
-  - name: task-management-backend
-    newName: bhanus95/task-management-backend
-    newTag: "101"
+- name: bhanus95/task-management-backend
+  newName: bhanus95/task-management-backend
+  newTag: b000f05111fe25ab2ea9d5a1f10be80bc5028fc9
+- name: task-management-backend
+  newName: bhanus95/task-management-backend
+  newTag: "101"
