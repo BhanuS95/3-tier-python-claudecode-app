@@ -183,6 +183,13 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
+      - name: Upload SonarQube report-task
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-report
+          path: backend/.scannerwork/report-task.txt
+          if-no-files-found: error
+
   # ============================================================
   # 6. SONARQUBE QUALITY GATE
   # ============================================================
@@ -192,10 +199,17 @@ jobs:
     needs: sonarqube
 
     steps:
+      - name: Download SonarQube report
+        uses: actions/download-artifact@v4
+        with:
+          name: sonar-report
+          path: backend/.scannerwork
+
       - name: Check Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1
         with:
           pollingTimeoutSec: 600
+          scanMetadataReportFile: backend/.scannerwork/report-task.txt
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
