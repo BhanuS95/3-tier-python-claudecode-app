@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: task-management-backend:1.0.0
+          image: task-management-backend
 
           ports:
             - name: http
@@ -40,7 +40,7 @@ spec:
             - secretKeyRef:
                 name: backend-secret
 
-          statupProbe:
+          startupProbe:
             httpGet:
               path: /health/start
               port: http

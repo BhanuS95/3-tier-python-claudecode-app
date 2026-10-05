@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: task-management-frontend:1.0.0
+          image: task-management-frontend
 
           ports:
             - name: http

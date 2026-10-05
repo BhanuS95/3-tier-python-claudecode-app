@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: webapps
+
+resources:
+  - ../../../base/backend
+
+images:
+  - name: task-management-backend
+    newName: bhanus95/task-management-backend
+    newTag: "101"
