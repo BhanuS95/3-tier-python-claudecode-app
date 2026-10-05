@@ -1,6 +1,6 @@
 # Web framework
 Flask==3.0.3
-Flask-Cors==4.0.1
+Flask-Cors==4.0.2
 
 # WSGI production server
 gunicorn==22.0.0
