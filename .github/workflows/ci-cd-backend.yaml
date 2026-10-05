@@ -76,8 +76,8 @@ jobs:
       - name: Ruff
         working-directory: backend
         run: |
-          ruff check .
           ruff check . --fix
+          ruff check .
 
       - name: Black
         working-directory: backend
