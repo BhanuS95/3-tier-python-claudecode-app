@@ -82,6 +82,7 @@ jobs:
       - name: Black
         working-directory: backend
         run: |
+          black .
           black --check .
 
       - name: Pytest
