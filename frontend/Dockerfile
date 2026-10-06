@@ -8,6 +8,12 @@
 
 FROM nginx:1.27-alpine
 
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # Remove the default Nginx site and replace it with ours.
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
