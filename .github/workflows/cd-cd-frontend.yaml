@@ -1,0 +1,514 @@
+name: DevSecOps Frontend CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "Kubernetes-Manifests/**"
+
+  workflow_dispatch:
+
+# Default permission: read-only.
+permissions:
+  contents: read
+
+# Prevent two production releases from modifying
+# the same GitOps repository simultaneously.
+concurrency:
+  group: frontend-production-release
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: bhanus95/task-management-frontend
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+
+  # ============================================================
+  # 1. GITLEAKS
+  # ============================================================
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-24.04
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+
+  # ============================================================
+  # 2. FRONTEND VALIDATION
+  # ============================================================
+  validation:
+    name: Frontend Validation
+    runs-on: ubuntu-24.04
+    needs: gitleaks
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # --------------------------------------------------------
+      # JavaScript syntax validation
+      # --------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate JavaScript
+        run: |
+          node --check frontend/js/app.js
+
+      # --------------------------------------------------------
+      # Verify required frontend files
+      # --------------------------------------------------------
+      - name: Validate frontend structure
+        shell: bash
+        run: |
+          set -e
+
+          test -f frontend/index.html
+          test -f frontend/nginx.conf
+          test -f frontend/Dockerfile
+          test -f frontend/js/app.js
+          test -f frontend/css/style.css
+
+          echo "Frontend structure validation passed."
+
+      # --------------------------------------------------------
+      # Validate Dockerfile syntax/build
+      # --------------------------------------------------------
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          load: true
+          tags: frontend-validation:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      # --------------------------------------------------------
+      # Test Nginx configuration inside the image
+      # --------------------------------------------------------
+      - name: Validate Nginx configuration
+        run: |
+          docker run --rm frontend-validation:latest \
+            nginx -t
+
+
+  # ============================================================
+  # 3. TRIVY FILESYSTEM SCAN
+  # ============================================================
+  trivy-fs:
+    name: Trivy Filesystem Scan
+    runs-on: ubuntu-24.04
+    needs: validation
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: sarif
+          output: trivy-frontend-fs.sarif
+
+      - name: Upload Trivy results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-frontend-fs.sarif
+          category: frontend-fs
+
+
+  # ============================================================
+  # 4. OWASP DEPENDENCY-CHECK
+  # ============================================================
+  dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-24.04
+    needs: trivy-fs
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "3-tier-python-claudecode-frontend"
+          path: "frontend"
+          format: "HTML"
+          out: "dependency-check-report"
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+
+      - name: Upload Dependency Check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dependency-check-report
+          path: dependency-check-report/
+          retention-days: 14
+
+
+  # ============================================================
+  # 5. SONARQUBE ANALYSIS
+  # ============================================================
+  sonarqube:
+    name: SonarQube Frontend Analysis
+    runs-on: ubuntu-24.04
+    needs: dependency-check
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        with:
+          args: >
+            -Dsonar.projectBaseDir=frontend
+            -Dsonar.projectKey=3-tier-python-claudecode-frontend
+            -Dsonar.projectName=3-tier-python-claudecode-frontend
+            -Dsonar.sources=.
+            -Dsonar.exclusions=**/node_modules/**
+
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: Upload SonarQube report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-sonar-report
+          path: frontend/.scannerwork/report-task.txt
+          if-no-files-found: error
+
+
+  # ============================================================
+  # 6. SONARQUBE QUALITY GATE
+  # ============================================================
+  quality-gate:
+    name: SonarQube Frontend Quality Gate
+    runs-on: ubuntu-24.04
+    needs: sonarqube
+
+    steps:
+
+      - name: Download SonarQube report
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-sonar-report
+          path: frontend/.scannerwork
+
+      - name: Check SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        with:
+          pollingTimeoutSec: 600
+          scanMetadataReportFile: frontend/.scannerwork/report-task.txt
+
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+
+  # ============================================================
+  # 7. BUILD FRONTEND IMAGE
+  # ============================================================
+  build-image:
+    name: Build Frontend Docker Image
+    runs-on: ubuntu-24.04
+    needs: quality-gate
+
+    if: github.event_name == 'push' &&
+        github.ref == 'refs/heads/main'
+
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Define image
+        id: image
+        shell: bash
+        run: |
+          echo "image=${IMAGE_NAME}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+
+          load: true
+
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+          provenance: false
+
+
+  # ============================================================
+  # 8. TRIVY IMAGE SCAN
+  # ============================================================
+  trivy-image:
+    name: Trivy Frontend Image Scan
+    runs-on: ubuntu-24.04
+    needs: build-image
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image for security scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+
+          load: true
+
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+          cache-from: type=gha
+
+      # Fail the pipeline on HIGH/CRITICAL vulnerabilities.
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      # Upload results to GitHub Security.
+      - name: Trivy SARIF scan
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+          format: sarif
+          output: trivy-frontend-image.sarif
+
+      - name: Upload image scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-frontend-image.sarif
+          category: frontend-image
+
+
+  # ============================================================
+  # 9. DOCKER HUB PUSH
+  # ============================================================
+  docker-push:
+    name: Push Frontend Image
+    runs-on: ubuntu-24.04
+
+    needs:
+      - build-image
+      - trivy-image
+
+    if: github.event_name == 'push' &&
+        github.ref == 'refs/heads/main'
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+
+          push: true
+
+          tags: |
+            ${{ needs.build-image.outputs.image }}
+
+          cache-from: type=gha
+
+      - name: Logout from Docker Hub
+        if: always()
+        run: |
+          docker logout
+
+
+  # ============================================================
+  # 10. GITOPS / KUSTOMIZE
+  # ============================================================
+  gitops:
+    name: Update Frontend Kustomize
+    runs-on: ubuntu-24.04
+
+    needs: docker-push
+
+    if: github.event_name == 'push' &&
+        github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: write
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Install Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      # --------------------------------------------------------
+      # Verify the actual production frontend overlay.
+      # --------------------------------------------------------
+      - name: Verify Kustomize manifest
+        shell: bash
+        run: |
+          test -f \
+            "Kubernetes-Manifests/overlay/production/frontend/kustomization.yaml" || {
+              echo "Frontend Kustomization file not found."
+              exit 1
+            }
+
+      # --------------------------------------------------------
+      # Update frontend image.
+      #
+      # IMPORTANT:
+      # The existing Kustomize image name is:
+      #
+      # task-management-frontend
+      #
+      # and newName is:
+      #
+      # bhanus95/task-management-frontend
+      # --------------------------------------------------------
+      - name: Update frontend image
+        working-directory: Kubernetes-Manifests/overlay/production/frontend
+        run: |
+          kustomize edit set image \
+            task-management-frontend=${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      # --------------------------------------------------------
+      # Show exactly what changed.
+      # --------------------------------------------------------
+      - name: Show manifest changes
+        run: |
+          git diff -- \
+            Kubernetes-Manifests/overlay/production/frontend/kustomization.yaml
+
+      # --------------------------------------------------------
+      # Commit GitOps change.
+      # --------------------------------------------------------
+      - name: Commit GitOps change
+        shell: bash
+        run: |
+
+          git config user.name "bhanu"
+          git config user.email "bs.shakya55@gmail.com"
+
+          git add \
+            Kubernetes-Manifests/overlay/production/frontend/kustomization.yaml
+
+          if git diff --cached --quiet; then
+            echo "No frontend manifest changes."
+            exit 0
+          fi
+
+          git commit \
+            -m "chore(gitops): update frontend image to ${IMAGE_TAG} [skip ci]"
+
+          git pull --rebase origin main
+
+          git push
