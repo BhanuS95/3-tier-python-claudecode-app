@@ -9,10 +9,10 @@
 FROM nginx:1.27-alpine
 
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk update && \
+    apk upgrade && \
+    apk cache clean && \
+    rm -rf /var/cache/apk/*
 
 # Remove the default Nginx site and replace it with ours.
 RUN rm -f /etc/nginx/conf.d/default.conf
