@@ -4,9 +4,9 @@ kind: Kustomization
 namespace: webapps
 
 resources:
-  - ../../../base/frontend
+- ../../../base/frontend
 
 images:
-  - name: task-management-frontend
-    newName: bhanus95/task-management-frontend
-    newTag: "101"
+- name: task-management-frontend
+  newName: bhanus95/task-management-frontend
+  newTag: faaee6949698a68f875fbb9addf38b35256cc7a3
