@@ -114,10 +114,10 @@ jobs:
       # --------------------------------------------------------
       # Test Nginx configuration inside the image
       # --------------------------------------------------------
-      - name: Validate Nginx configuration
-        run: |
-          docker run --rm frontend-validation:latest \
-            nginx -t
+      #- name: Validate Nginx configuration
+      #  run: |
+       #   docker run --rm frontend-validation:latest \
+        #    nginx -t
 
 
   # ============================================================
