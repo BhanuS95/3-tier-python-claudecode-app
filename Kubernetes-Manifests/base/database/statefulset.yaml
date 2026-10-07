@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgresql:16
+          image: postgres:16
 
           ports:
             - name: http
@@ -79,7 +79,7 @@ spec:
     - metadata:
         name: psql-data
       spec:
-        accessMode:
+        accessModes:
           - ReadWriteOnce
 
         resources:
