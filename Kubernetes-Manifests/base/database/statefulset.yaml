@@ -52,11 +52,7 @@ spec:
               command:
                 - sh
                 - -c
-                - pg_isready
-                - -U
-                - $POSTGRES_USER
-                - -d
-                - $POSTGRES_DB
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             initialDelaySeconds: 10
             timeoutSeconds: 5
             successThreshold: 3
@@ -68,11 +64,7 @@ spec:
               command:
                 - sh
                 - -c
-                - pg_isready
-                - -U
-                - $POSTGRES_USER
-                - -d
-                - $POSTGRES_DB
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             initialDelaySeconds: 20
             timeoutSeconds: 5
             successThreshold: 3
@@ -80,14 +72,15 @@ spec:
             periodSeconds: 10
 
           volumeMounts:
-            - name: psql_data
+            - name: psql-data
               mountPath: /var/lib/postgresql/data
 
   volumeClaimTemplates:
     - metadata:
-        name: psql_data
+        name: psql-data
       spec:
-        accessMode: ["ReadWriteOnce"]
+        accessMode:
+          - ReadWriteOnce
 
         resources:
           requests:
