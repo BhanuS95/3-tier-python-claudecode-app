@@ -55,7 +55,7 @@ spec:
                 - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             initialDelaySeconds: 10
             timeoutSeconds: 5
-            successThreshold: 3
+            successThreshold: 1
             failureThreshold: 5
             periodSeconds: 10
 
@@ -67,7 +67,7 @@ spec:
                 - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             initialDelaySeconds: 20
             timeoutSeconds: 5
-            successThreshold: 3
+            successThreshold: 1
             failureThreshold: 5
             periodSeconds: 10
 
