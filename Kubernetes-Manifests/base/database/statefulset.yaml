@@ -83,14 +83,14 @@ spec:
             - name: psql_data
               mountPath: /var/lib/postgresql/data
 
-volumeClaimTemplates:
-  - metadata:
-      name: psql_data
-    spec:
-      accessMode: ["ReadWriteOnce"]
+  volumeClaimTemplates:
+    - metadata:
+        name: psql_data
+      spec:
+        accessMode: ["ReadWriteOnce"]
 
-      resources:
-        requests:
-          storage: 1Gi
+        resources:
+          requests:
+            storage: 1Gi
 
-      storageClassName: postgres-sc
+        storageClassName: postgres-sc
