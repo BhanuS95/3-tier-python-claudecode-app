@@ -57,11 +57,11 @@ spec:
                 - $POSTGRES_USER
                 - -d
                 - $POSTGRES_DB
-            initialDelaySeconds: 10s
-            timeoutSeconds: 5s
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
             successThreshold: 3
             failureThreshold: 5
-            periodSeconds: 10s
+            periodSeconds: 10
 
           livenessProbe:
             exec:
@@ -73,11 +73,11 @@ spec:
                 - $POSTGRES_USER
                 - -d
                 - $POSTGRES_DB
-            initialDelaySeconds: 20s
-            timeoutSeconds: 5s
+            initialDelaySeconds: 20
+            timeoutSeconds: 5
             successThreshold: 3
             failureThreshold: 5
-            periodSeconds: 10s
+            periodSeconds: 10
 
           volumeMounts:
             - name: psql_data
