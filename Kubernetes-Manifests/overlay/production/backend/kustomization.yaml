@@ -7,6 +7,6 @@ resources:
 - ../../../base/backend
 
 images:
-- name: bhanus95/task-management-backend
+- name: task-management-backend
   newName: bhanus95/task-management-backend
   newTag: faaee6949698a68f875fbb9addf38b35256cc7a3
