@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-management-ingress
+  namespace: webapps
+
+  annotations:
+    # Create an internet-facing AWS Application Load Balancer
+    alb.ingress.kubernetes.io/scheme: internet-facing
+
+    # Route traffic directly to pod IPs
+    alb.ingress.kubernetes.io/target-type: ip
+
+    # ALB listens on HTTP port 80
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+
+    # AWS resource tags
+    alb.ingress.kubernetes.io/tags: |
+      Environment=production,
+      Application=task-management,
+      ManagedBy=kubernetes
+
+spec:
+  ingressClassName: alb
+
+  rules:
+    - http:
+        paths:
+
+          # Backend API
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 5000
+
+          # Frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000
