@@ -42,7 +42,7 @@ spec:
 
           startupProbe:
             httpGet:
-              path: /health/start
+              path: /health/live
               port: http
             initialDelaySeconds: 10
             periodSeconds: 10
