@@ -37,7 +37,7 @@ spec:
               memory: "512Mi"
           
           envFrom:
-            - secretKeyRef:
+            - secretRef:
                 name: backend-secret
 
           startupProbe:
