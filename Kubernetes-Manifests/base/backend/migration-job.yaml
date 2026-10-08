@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: backend-migration
+  namespace: webapps
+
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 300
+
+  template:
+    metadata:
+      labels:
+        app: backend-migration
+
+    spec:
+      restartPolicy: Never
+
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+
+          envFrom:
+            - secretRef:
+                name: backend-secret
+
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL..."
+
+              until pg_isready \
+                -h "$DATABASE_HOST" \
+                -p "$DATABASE_PORT" \
+                -U "$DATABASE_USER" \
+                -d "$DATABASE_NAME"
+              do
+                echo "PostgreSQL is not ready. Retrying..."
+                sleep 5
+              done
+
+              echo "PostgreSQL is ready."
+
+      containers:
+        - name: migration
+          image: task-management-backend
+
+          command:
+            - flask
+
+          args:
+            - db
+            - upgrade
+
+          envFrom:
+            - secretRef:
+                name: backend-secret
