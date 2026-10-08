@@ -44,9 +44,9 @@ spec:
             httpGet:
               path: /health/start
               port: http
-            initialDelaySeconds: 10s
-            periodSeconds: 10s
-            timeoutSeconds: 5s
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
             successThreshold: 3
             FailureThreshold: 5
 
@@ -54,9 +54,9 @@ spec:
             httpGet:
               path: /health/live
               port: http
-            initialDelaySeconds: 30s
-            periodSeconds: 20s
-            timeoutSeconds: 5s
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
             successThreshold: 3
             FailureThreshold: 5
 
@@ -64,8 +64,8 @@ spec:
             httpGet:
               path: /health/ready
               port: http
-            initialDelaySeconds: 20s
-            periodSeconds: 10s
-            timeoutSeconds: 5s
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
             successThreshold: 3
             FailureThreshold: 5
